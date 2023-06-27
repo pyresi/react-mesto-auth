@@ -11,6 +11,11 @@ import EditProfilePopup from './EditProfilePopup.js';
 import EditAvatarPopup from './EditAvatarPopup.js';
 import AddPlacePopup from './AddPlacePopup.js';
 import { AppContext } from '../contexts/CurrentAppContext.js';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import Register from './Register.js';
+import Login from './Login.js';
+import AuthorizationPopup from './InfoTooltip.js';
+import ProtectedRoute from './ProtectedRoute.js';
 
 function App() {
   const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] = useState(false);
@@ -21,6 +26,12 @@ function App() {
   const [currentUser, setCurrentUser] = useState({}); //хук состояния. нужен для изменения состояния компонента
   const [cards, setCards] = useState([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isAuthorizationPopupOpen, setIsAuthorizationPopupOpen] =
+    useState(false);
+  const [isRegistrationSuccess, setIsRegistrationSuccess] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [email, setEmail] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     Promise.all([api.getUserInfo(), api.getInitialCards()])
@@ -32,6 +43,21 @@ function App() {
         setCards(cards);
       })
       .catch(console.error);
+  }, []);
+
+  function verifyUser() {
+    api
+      .verifyUser()
+      .then((res) => {
+        setEmail(res.data.email);
+        setIsLoggedIn(true);
+        navigate('/');
+      })
+      .catch(console.error);
+  }
+
+  useEffect(() => {
+    verifyUser();
   }, []);
 
   function handleEditAvatarClick() {
@@ -81,6 +107,7 @@ function App() {
     setIsAddPlacePopupOpen(false);
     setIsConfirmationPopupOpen(false);
     setSelectedCard(null);
+    setIsAuthorizationPopupOpen(false);
   }
 
   function handleCardLike(card) {
@@ -152,6 +179,34 @@ function App() {
       });
   }
 
+  function handleRegisterClick(email, password) {
+    api
+      .registerUser(email, password)
+      .then(() => {
+        setIsAuthorizationPopupOpen(true);
+        setIsRegistrationSuccess(true);
+      })
+      .catch(() => {
+        setIsAuthorizationPopupOpen(true);
+        setIsRegistrationSuccess(false);
+      });
+  }
+
+  function handleLoginClick(email, password) {
+    api
+      .loginUser(email, password)
+      .then((res) => {
+        localStorage.setItem('token', res.token);
+        verifyUser();
+      })
+      .catch(console.error);
+  }
+
+  function handleLogoutClick() {
+    localStorage.removeItem('token');
+    navigate('/sign-in');
+  }
+
   return (
     <div className="root">
       {/* Создали провайдер для передачи контекста в лежащие внутри компоненты */}
@@ -159,17 +214,34 @@ function App() {
       <AppContext.Provider value={{ isLoading, closeAllPopups }}>
         <UserContext.Provider value={{ currentUser, setCurrentUser }}>
           <div className="page">
-            <Header />
-            <Main
-              onEditProfile={handleEditProfileClick}
-              onAddPlace={handleAddPlaceClick}
-              onEditAvatar={handleEditAvatarClick}
-              onCardClick={handleCardClick}
-              onCardLike={handleCardLike}
-              setCards={setCards}
-              cards={cards}
-              onCardDelete={handleCardDelete}
-            />
+            <Header onLogout={handleLogoutClick} email={email} />
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute
+                    loggedIn={isLoggedIn}
+                    element={Main}
+                    onEditProfile={handleEditProfileClick}
+                    onAddPlace={handleAddPlaceClick}
+                    onEditAvatar={handleEditAvatarClick}
+                    onCardClick={handleCardClick}
+                    onCardLike={handleCardLike}
+                    setCards={setCards}
+                    cards={cards}
+                    onCardDelete={handleCardDelete}
+                  />
+                }
+              />
+              <Route
+                path="/sign-up"
+                element={<Register onRegister={handleRegisterClick} />}
+              />
+              <Route
+                path="/sign-in"
+                element={<Login onLogin={handleLoginClick} />}
+              />
+            </Routes>
             <Footer />
             {/* ----------------------------------------------------- */}
             <EditProfilePopup
@@ -187,6 +259,11 @@ function App() {
             <EditAvatarPopup
               isOpen={isEditAvatarPopupOpen}
               onSubmit={handleAvatar}
+            />
+            {/* ----------------------------------------------------- */}
+            <AuthorizationPopup
+              isSuccess={isRegistrationSuccess}
+              isOpen={isAuthorizationPopupOpen}
             />
             {/* ----------------------------------------------------- */}
             <PopupWithForm

@@ -90,6 +90,38 @@ class Api {
       headers: this.headers,
     });
   }
+
+  registerUser(email, password) {
+    return fetch(`https://auth.nomoreparties.co/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+      }),
+    }).then(this._checkResponse);
+  }
+
+  loginUser(email, password) {
+    return fetch(`https://auth.nomoreparties.co/signin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+      }),
+    }).then(this._checkResponse);
+  }
+
+  verifyUser() {
+    return fetch(`https://auth.nomoreparties.co/users/me`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    }).then(this._checkResponse);
+  }
 }
 
 export const api = new Api({
