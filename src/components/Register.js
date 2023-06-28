@@ -9,8 +9,6 @@ function Register({ onRegister }) {
   function handleSubmit(e) {
     // Запрещаем браузеру переходить по адресу формы
     e.preventDefault();
-    console.log(email);
-    console.log(password);
     // Передаём значения управляемых компонентов во внешний обработчик
     onRegister(email, password);
   }
@@ -29,7 +27,7 @@ function Register({ onRegister }) {
           onChange={(e) => setEmail(e.target.value)}
         ></input>
         <input
-          type="text"
+          type="password"
           required=""
           name="register-password"
           className="authorization__input"

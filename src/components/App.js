@@ -33,31 +33,46 @@ function App() {
   const [email, setEmail] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    Promise.all([api.getUserInfo(), api.getInitialCards()])
-      // тут деструктурируете ответ от сервера, чтобы было понятнее, что пришло
-      .then(([userData, cards]) => {
-        // тут установка данных пользователя
-        // и тут отрисовка карточек
-        setCurrentUser(userData);
-        setCards(cards);
-      })
-      .catch(console.error);
-  }, []);
+  // useEffect(() => {
+  //   Promise.all([api.getUserInfo(), api.getInitialCards()])
+  //     // тут деструктурируете ответ от сервера, чтобы было понятнее, что пришло
+  //     .then(([userData, cards]) => {
+  //       // тут установка данных пользователя
+  //       // и тут отрисовка карточек
+  //       setCurrentUser(userData);
+  //       setCards(cards);
+  //     })
+  //     .catch(console.error);
+  // }, []);
 
-  function verifyUser() {
-    api
-      .verifyUser()
-      .then((res) => {
-        setEmail(res.data.email);
-        setIsLoggedIn(true);
-        navigate('/');
-      })
-      .catch(console.error);
+  function login(email) {
+    setEmail(email);
+    setIsLoggedIn(true);
+    navigate('/');
+  }
+
+  function initialize() {
+    return (
+      Promise.all([api.getUserInfo(), api.getInitialCards()])
+        // тут деструктурируете ответ от сервера, чтобы было понятнее, что пришло
+        .then(([userData, cards]) => {
+          // тут установка данных пользователя
+          // и тут отрисовка карточек
+          setCurrentUser(userData);
+          setCards(cards);
+        })
+        .catch(console.error)
+    );
   }
 
   useEffect(() => {
-    verifyUser();
+    api
+      .verifyUser()
+      .then((res) => {
+        login(res.data.email);
+      })
+      .then(initialize)
+      .catch(console.error);
   }, []);
 
   function handleEditAvatarClick() {
@@ -185,6 +200,7 @@ function App() {
       .then(() => {
         setIsAuthorizationPopupOpen(true);
         setIsRegistrationSuccess(true);
+        navigate('/sign-in');
       })
       .catch(() => {
         setIsAuthorizationPopupOpen(true);
@@ -197,9 +213,14 @@ function App() {
       .loginUser(email, password)
       .then((res) => {
         localStorage.setItem('token', res.token);
-        verifyUser();
+        login(email);
+        initialize();
       })
-      .catch(console.error);
+      .catch((err) => {
+        console.error(err);
+        setIsAuthorizationPopupOpen(true);
+        setIsRegistrationSuccess(false);
+      });
   }
 
   function handleLogoutClick() {

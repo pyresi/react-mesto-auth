@@ -26,7 +26,7 @@ function Login({ onLogin }) {
           onChange={(e) => setEmail(e.target.value)}
         ></input>
         <input
-          type="text"
+          type="password"
           required=""
           name="register-password"
           className="authorization__input"
